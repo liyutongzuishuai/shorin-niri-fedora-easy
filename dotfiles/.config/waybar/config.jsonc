@@ -25,12 +25,7 @@
         "custom/left_div#3",
 	// 这个模块是shorinNiri相关的常用命令
 	"custom/actions",
-        "custom/wfrec",
-        "custom/screenshot",
 	//"custom/wallpapers",
-	"custom/clipboard",
-        "custom/left_div#2",
-        "idle_inhibitor",
         "custom/colorpicker",
         "power-profiles-daemon",
         "custom/left_div#11",

@@ -41,6 +41,8 @@ CACHE_FILE="$HOME/.cache/shorin-niri-software.cache"
 # 3. 软件清单列表 (Fedora 可用标准包名)
 # ==========================================
 TARGET_SOFTWARE=(
+    # --- Niri Desktop Core ---
+    "niri" "waybar" "swaybg" "wl-clipboard" "fuzzel" "mako" "wlsunset"
     # --- Desktop Extras & Media ---
     "breeze-cursor-theme" "mpv" "wf-recorder" "imv"
     # --- Fonts ---

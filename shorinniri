@@ -389,6 +389,17 @@ apply_user_configs() {
         cp -an "$WALLPAPER_SRC_DIR"/. "$wp_dest/" || true
     fi
     
+    mkdir -p "$HOME/.config/gtk-3.0"
+    cat > "$HOME/.config/gtk-3.0/bookmarks" << EOF
+file://$HOME/Documents Documents
+file://$HOME/Pictures Pictures
+file://$HOME/Videos Videos
+file://$HOME/Music Music
+file://$HOME/Downloads Downloads
+file://$HOME/.config .config
+file://$HOME/.local
+EOF
+
     mkdir -p "$HOME/.config/niri/dms"
     touch "$HOME/.config/niri/dms/colors.kdl"
     if [[ ! -f "$HOME/.config/niri/output.kdl" && -f "$HOME/.config/niri/output-example.kdl" ]]; then

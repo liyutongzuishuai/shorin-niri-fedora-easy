@@ -31,6 +31,7 @@ step() { echo -e "\n${C_CYA}>>> $1${C_DEF}"; }
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMPLATE_DIR="$SCRIPT_DIR/dotfiles"
 WALLPAPER_SRC_DIR="$SCRIPT_DIR/Wallpapers"
+FONT_SRC_DIR="$SCRIPT_DIR/fonts"
 BASE_BACKUP_DIR="$HOME/.cache/shorin-niri-backup"
 BACKUP_DIR="$BASE_BACKUP_DIR/$(date +%Y%m%d_%H%M%S)"
 
@@ -401,6 +402,14 @@ apply_user_configs() {
         local wp_dest="$HOME/Pictures/Wallpapers"
         mkdir -p "$wp_dest"
         cp -an "$WALLPAPER_SRC_DIR"/. "$wp_dest/" || true
+    fi
+    
+    if [[ -d "$FONT_SRC_DIR" ]]; then
+        local font_dest="$HOME/.local/share/fonts"
+        mkdir -p "$font_dest"
+        cp -an "$FONT_SRC_DIR"/. "$font_dest/" || true
+        fc-cache -f 2>/dev/null || true
+        ok "$(_t "Nerd Fonts installed successfully." "Nerd 字体安装完成。")"
     fi
     
     mkdir -p "$HOME/.config/niri/dms"

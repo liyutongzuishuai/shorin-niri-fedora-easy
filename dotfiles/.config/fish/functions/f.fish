@@ -220,7 +220,7 @@ function f
     
     # 运行 Fastfetch
     if test -n "$SELECTED_IMG"; and test -f "$SELECTED_IMG"
-        # 用 chafa 显示字符画
+        # 用 chafa 显示字符画（兼容所有终端）
         chafa --size=20x10 --symbols=block "$SELECTED_IMG" 2>/dev/null
         echo ""
         fastfetch --logo none $ARGS_FOR_FASTFETCH

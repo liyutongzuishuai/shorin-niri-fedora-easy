@@ -34,4 +34,4 @@ abbr ft fastfetch
 abbr reboot 'systemctl reboot'
 
 # opencode
-fish_add_path /home/lancetfish/.opencode/bin
+fish_add_path ~/.opencode/bin

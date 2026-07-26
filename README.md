@@ -6,11 +6,7 @@
 
 ## Preview 预览图
 
-![](pics/pic1.png)
-
-![](pics/gif1.gif)
-
-![](pics/gif2.gif)
+![桌面预览](pics/screenshot.png)
 
 ## 与原版的主要区别
 

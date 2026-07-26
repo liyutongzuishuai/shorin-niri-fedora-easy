@@ -106,17 +106,9 @@ function f
     
     function get_random_url
         set -l TIMEOUT --connect-timeout 5 --max-time 15
-        set -l RAND (math (random) % 3 + 1)
         
         # === SFW 正常 API ===
-        switch $RAND
-            case 1
-                curl -s $TIMEOUT "https://api.waifu.im/images?IncludedTags=waifu&IsNsfw=false" | jq -r '.images[0].url'
-            case 2
-                curl -s $TIMEOUT "https://nekos.best/api/v2/waifu" | jq -r '.results[0].url'
-            case 3
-                curl -s $TIMEOUT "https://api.waifu.pics/sfw/waifu" | jq -r '.url'
-        end
+        curl -s $TIMEOUT "https://nekos.best/api/v2/waifu" | jq -r '.results[0].url'
     end
     
     function download_one_image -V CACHE_DIR

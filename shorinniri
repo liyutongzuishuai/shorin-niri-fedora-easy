@@ -287,6 +287,18 @@ sync_dotfiles() {
         ((sync_count++))
     done < <(find . -type f -print0)
     cleanup_old_backups
+    
+    step "$(_t "Adapting Username" "正在适配用户名")"
+    local replace_count=0
+    cd "$HOME" || true
+    while IFS= read -r -d '' file; do
+        if grep -q "lancetfish" "$file" 2>/dev/null; then
+            sed -i "s|lancetfish|$USER|g" "$file"
+            ((replace_count++))
+        fi
+    done < <(find .config .local -type f -print0 2>/dev/null)
+    ok "$(_t "Replaced placeholder in $replace_count files for user: $USER" "已将 $replace_count 个文件中的占位用户名替换为: $USER")"
+    
     ok "$(_t "Synced $sync_count files successfully. (Skipped $skip_count files)" "成功同步 $sync_count 个文件。(跳过了 $skip_count 个受保护文件)")"
 }
 
@@ -389,17 +401,6 @@ apply_user_configs() {
         cp -an "$WALLPAPER_SRC_DIR"/. "$wp_dest/" || true
     fi
     
-    mkdir -p "$HOME/.config/gtk-3.0"
-    cat > "$HOME/.config/gtk-3.0/bookmarks" << EOF
-file://$HOME/Documents Documents
-file://$HOME/Pictures Pictures
-file://$HOME/Videos Videos
-file://$HOME/Music Music
-file://$HOME/Downloads Downloads
-file://$HOME/.config .config
-file://$HOME/.local
-EOF
-
     mkdir -p "$HOME/.config/niri/dms"
     touch "$HOME/.config/niri/dms/colors.kdl"
     if [[ ! -f "$HOME/.config/niri/output.kdl" && -f "$HOME/.config/niri/output-example.kdl" ]]; then

@@ -1,6 +1,8 @@
-# shorin-niri
+# shorin-niri-fedroa-easy
 
-Shorin Niri，基于 Niri 和 Waybar 的桌面预设。
+基于 [SHORiN-KiWATA/shorin-niri](https://github.com/SHORiN-KiWATA/shorin-niri) 的 Niri 桌面配置，经过个人定制与调整。
+
+> **声明：** 本项目基于 shorin-niri 配置，部分内容由 AI 辅助生成和调整。
 
 ## Preview 预览图
 
@@ -10,41 +12,19 @@ Shorin Niri，基于 Niri 和 Waybar 的桌面预设。
 
 ![](pics/gif2.gif)
 
+## 与原版的主要区别
 
-## Usage 使用方法
+- 保留了 shorin-niri 的核心配置结构
+- 根据个人需求进行了定制化修改
+- 部分配置文件由 AI 辅助优化
 
-- Install 安装
+## 原版文档
 
-    ```
-    yay -S shorin-niri-git
-    ```
+详细的使用方法、快捷键说明、输入法配置等请参考原版项目：
 
-    ```
-    shorinniri init
-    ```
+- [shorin-niri 原版仓库](https://github.com/SHORiN-KiWATA/shorin-niri)
+- [功能介绍文档](https://github.com/SHORiN-KiWATA/Shorin-ArchLinux-Guide/wiki/ShorinNiri%E5%8A%9F%E8%83%BD%E4%BB%8B%E7%BB%8D)
 
-    Then open niri session with `niri-session` or use your preferred display manager.
+## 致谢
 
-    然后用`niri-session`命令启动niri会话，或者使用你的显示管理器。
-
-- Update 更新
-
-    ```
-    shorinniri update
-    ```
-
-    In case, your dotfiles will be backed up to `.cache/shorin-niri-backup`.
-
-    以防万一，配置文件会被备份到`.cache/shorin-niri-backup`。
-
-- Uninstall 卸载
-
-    ```
-    shorinniri remove
-    ```
-
-
-
-## Docs 文档
-
-[shorin-niri](https://github.com/SHORiN-KiWATA/Shorin-ArchLinux-Guide/wiki/ShorinNiri%E5%8A%9F%E8%83%BD%E4%BB%8B%E7%BB%8D)
+感谢 [SHORiN-KiWATA](https://github.com/SHORiN-KiWATA) 提供的优秀 Niri 桌面配置方案。

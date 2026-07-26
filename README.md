@@ -1,4 +1,4 @@
-# shorin-niri-fedroa-easy
+# shorin-niri-fedora-easy
 
 基于 [SHORiN-KiWATA/shorin-niri](https://github.com/SHORiN-KiWATA/shorin-niri) 的 Niri 桌面配置，经过个人定制与调整。
 

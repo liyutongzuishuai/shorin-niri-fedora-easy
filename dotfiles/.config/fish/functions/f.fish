@@ -220,8 +220,10 @@ function f
     
     # 运行 Fastfetch
     if test -n "$SELECTED_IMG"; and test -f "$SELECTED_IMG"
-        # 显示图片
-        fastfetch --logo "$SELECTED_IMG" --logo-preserve-aspect-ratio true $ARGS_FOR_FASTFETCH
+        # 用 chafa 显示字符画
+        chafa --size=20x10 --symbols=block "$SELECTED_IMG" 2>/dev/null
+        echo ""
+        fastfetch --logo none $ARGS_FOR_FASTFETCH
         
         # === 逻辑: 移动到 used 目录 ===
         mv "$SELECTED_IMG" "$USED_DIR/"

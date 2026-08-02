@@ -32,11 +32,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 TEMPLATE_DIR="$SCRIPT_DIR/dotfiles"
 WALLPAPER_SRC_DIR="$SCRIPT_DIR/Wallpapers"
 FONT_SRC_DIR="$SCRIPT_DIR/fonts"
-BASE_BACKUP_DIR="$HOME/.cache/shorin-niri-backup"
+BASE_BACKUP_DIR="$HOME/.local/state/shorin-niri-backup"
 BACKUP_DIR="$BASE_BACKUP_DIR/$(date +%Y%m%d_%H%M%S)"
 
 USER_IGNORE_FILE="$HOME/.config/shorin-niri/protected.list"
-CACHE_FILE="$HOME/.cache/shorin-niri-software.cache"
+CACHE_FILE="$HOME/.local/state/shorin-niri-software.cache"
 
 # ==========================================
 # 3. 软件清单列表 (Fedora 可用标准包名)
@@ -57,7 +57,7 @@ TARGET_SOFTWARE=(
     # --- Standard CLI/GUI Packages ---
     "bat" "xclip" "eza" "fish" "starship" "zoxide"
     "chafa" "timg" "ImageMagick" "jq" 
-    "wlsunset" "pavucontrol" "strace" "kitty" "firefox"
+    "pavucontrol" "strace" "kitty" "firefox"
     "fastfetch" "btop" "gdu"
     # --- Input Method ---
     "fcitx5" "fcitx5-configtool" "fcitx5-gtk" "fcitx5-qt" "fcitx5-rime"
@@ -69,11 +69,9 @@ UPDATE_IGNORE=(
     ".config/gtk-4.0"
     ".config/mimeapps.list"
     ".config/xdg-terminals.list"
-    ".config/niri/output.kdl"
     ".config/fcitx5"
     ".local/share/fcitx5"
     ".local/themes"
-    ".config/niri"
     ".config/waybar/colors.css"
     ".cache/wal/colors.json"
     ".config/fuzzel/colors.ini"
@@ -83,7 +81,6 @@ UPDATE_IGNORE=(
     ".config/cava/themes/your-theme"
     ".config/starship.toml"
     ".config/yazi/theme.toml"
-    ".config/niri/colors.kdl"
     ".cache/matugen/recoloricons.sh"
     ".config/swayosd/colors.css"
     ".config/fastfetch/config.jsonc"
@@ -123,6 +120,12 @@ ask_for_sudo() {
 # ==========================================
 # 5. 软件依赖管理 (Fedora DNF 适配)
 # ==========================================
+# 关键包 - 失败则中止安装
+CRITICAL_SOFTWARE=(
+    "niri" "waybar" "swaybg" "wl-clipboard" "fuzzel" "mako" "wlsunset"
+    "fcitx5" "fcitx5-configtool" "fcitx5-gtk" "fcitx5-qt" "fcitx5-rime"
+)
+
 manage_software() {
     step "$(_t "Checking Optional Dependencies" "检查并同步全家桶软件")"
     
@@ -163,7 +166,33 @@ manage_software() {
         ok "$(_t "All required optional software is already installed." "当前版本的所有配套软件均已安装。")"
     else
         info "$(_t "Installing newly added/missing software via DNF..." "正在使用 DNF 静默安装新增或缺失的软件...")"
-        sudo dnf install -y --skip-unavailable "${to_install[@]}"
+        
+        local critical_to_install=()
+        local normal_to_install=()
+        for pkg in "${to_install[@]}"; do
+            local is_critical=0
+            for critical_pkg in "${CRITICAL_SOFTWARE[@]}"; do
+                if [[ "$pkg" == "$critical_pkg" ]]; then is_critical=1; break; fi
+            done
+            if [[ $is_critical -eq 1 ]]; then
+                critical_to_install+=("$pkg")
+            else
+                normal_to_install+=("$pkg")
+            fi
+        done
+        
+        if [[ ${#critical_to_install[@]} -gt 0 ]]; then
+            info "$(_t "Installing critical packages..." "正在安装关键软件包...")"
+            if ! sudo dnf install -y "${critical_to_install[@]}"; then
+                err "$(_t "Critical package installation failed. Aborting." "关键软件包安装失败，终止安装。")"
+                exit 1
+            fi
+        fi
+        
+        if [[ ${#normal_to_install[@]} -gt 0 ]]; then
+            info "$(_t "Installing optional packages..." "正在安装可选软件包...")"
+            sudo dnf install -y --skip-unavailable "${normal_to_install[@]}"
+        fi
         
         local failed_pkgs=()
         for pkg in "${to_install[@]}"; do
@@ -175,11 +204,35 @@ manage_software() {
         if [ ${#failed_pkgs[@]} -eq 0 ]; then
             ok "$(_t "All missing software installed successfully." "所有缺失软件均已成功安装。")"
         else
-            warn "$(_t "The following packages failed to install:" "以下软件安装失败，请检查网络或软件源:")"
+            local critical_failed=()
+            local optional_failed=()
             for fpkg in "${failed_pkgs[@]}"; do
-                echo -e "  ${C_RED}- $fpkg${C_DEF}"
+                local is_critical=0
+                for critical_pkg in "${CRITICAL_SOFTWARE[@]}"; do
+                    if [[ "$fpkg" == "$critical_pkg" ]]; then is_critical=1; break; fi
+                done
+                if [[ $is_critical -eq 1 ]]; then
+                    critical_failed+=("$fpkg")
+                else
+                    optional_failed+=("$fpkg")
+                fi
             done
-            info "$(_t "Script will continue, but some features might be missing." "脚本将继续执行，但由于软件缺失，部分功能可能无法正常工作。")"
+            
+            if [[ ${#critical_failed[@]} -gt 0 ]]; then
+                err "$(_t "Critical packages failed to install:" "以下关键软件包安装失败:")"
+                for fpkg in "${critical_failed[@]}"; do
+                    echo -e "  ${C_RED}- $fpkg${C_DEF}"
+                done
+                exit 1
+            fi
+            
+            if [[ ${#optional_failed[@]} -gt 0 ]]; then
+                warn "$(_t "The following optional packages failed to install:" "以下可选软件包安装失败，请检查网络或软件源:")"
+                for fpkg in "${optional_failed[@]}"; do
+                    echo -e "  ${C_YEL}- $fpkg${C_DEF}"
+                done
+                info "$(_t "Script will continue, but some features might be missing." "脚本将继续执行，但由于软件缺失，部分功能可能无法正常工作。")"
+            fi
         fi
     fi
     
@@ -295,8 +348,8 @@ sync_dotfiles() {
     local replace_count=0
     cd "$HOME" || true
     while IFS= read -r -d '' file; do
-        if grep -q "lancetfish" "$file" 2>/dev/null; then
-            sed -i "s|lancetfish|$USER|g" "$file"
+        if grep -q "/home/lancetfish" "$file" 2>/dev/null; then
+            sed -i "s|/home/lancetfish|/home/$USER|g" "$file"
             ((replace_count++))
         fi
     done < <(find .config .local -type f -print0 2>/dev/null)
@@ -321,6 +374,44 @@ hide_desktop_file() {
     fi
 }
 
+setup_firefox_policies() {
+    local profile_dir
+    local profiles_ini="$HOME/.mozilla/firefox/profiles.ini"
+    
+    if [[ ! -f "$profiles_ini" ]]; then
+        return
+    fi
+    
+    profile_dir=$(grep -A5 '^\[Install' "$profiles_ini" | grep '^Default=' | cut -d= -f2 | head -1)
+    if [[ -z "$profile_dir" ]]; then
+        profile_dir=$(grep '^Path=' "$profiles_ini" | cut -d= -f2 | head -1)
+    fi
+    
+    if [[ -z "$profile_dir" ]]; then
+        return
+    fi
+    
+    local target_dir="$HOME/.mozilla/firefox/$profile_dir"
+    if [[ ! -d "$target_dir" ]]; then
+        return
+    fi
+    
+    local pol_dir="$target_dir/policies"
+    mkdir -p "$pol_dir"
+    cat > "$pol_dir/policies.json" << 'EOF'
+{
+  "policies": {
+    "Extensions": {
+      "Install": [
+        "https://addons.mozilla.org/firefox/downloads/latest/pywalfox/latest.xpi",
+        "https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi"
+      ]
+    }
+  }
+}
+EOF
+}
+
 run_hide_desktop_file() {
     local apps_to_hide=(
         "lstopo.desktop" "avahi-discover.desktop" "qv4l2.desktop" "qvidcap.desktop" "bssh.desktop" "org.fcitx.Fcitx5.desktop"
@@ -337,25 +428,23 @@ run_hide_desktop_file() {
 setup_system_environment() {
     step "$(_t "Configuring System Environment" "正在配置底层系统与硬件服务")"
     
-    sudo systemctl enable --now power-profiles-daemon.service >/dev/null 2>&1 || true
-    sudo gpasswd -a "$USER" i2c >/dev/null 2>&1 || true
-    if ! grep -q "i2c-dev" /etc/modules-load.d/i2c-dev.conf 2>/dev/null; then echo "i2c-dev" | sudo tee /etc/modules-load.d/i2c-dev.conf >/dev/null; fi
+    if systemctl list-unit-files | grep -q '^power-profiles-daemon.service'; then
+        sudo systemctl enable --now power-profiles-daemon.service >/dev/null 2>&1 || true
+    else
+        info "$(_t "power-profiles-daemon not available, skipping." "power-profiles-daemon 不可用，跳过。")"
+    fi
     
-    local POL_DIR="/etc/firefox/policies"
-    sudo mkdir -p "$POL_DIR"
-    sudo tee "$POL_DIR/policies.json" > /dev/null << 'EOF'
-{
-  "policies": {
-    "Extensions": {
-      "Install": [
-        "https://addons.mozilla.org/firefox/downloads/latest/pywalfox/latest.xpi",
-        "https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi"
-      ]
-    }
-  }
-}
-EOF
-    sudo chmod 755 "$POL_DIR"; sudo chmod 644 "$POL_DIR/policies.json"
+    if getent group i2c >/dev/null 2>&1; then
+        sudo gpasswd -a "$USER" i2c >/dev/null 2>&1 || true
+    else
+        info "$(_t "i2c group not found, skipping." "i2c 组不存在，跳过。")"
+    fi
+    
+    if ! grep -q "i2c-dev" /etc/modules-load.d/i2c-dev.conf 2>/dev/null; then
+        echo "i2c-dev" | sudo tee /etc/modules-load.d/i2c-dev.conf >/dev/null 2>&1 || true
+    fi
+    
+    setup_firefox_policies
 }
 
 apply_user_configs() {
@@ -365,18 +454,9 @@ apply_user_configs() {
     if ! grep -q "kitty.desktop" "$HOME/.config/xdg-terminals.list" 2>/dev/null; then echo 'kitty.desktop' >> "$HOME/.config/xdg-terminals.list"; fi
     
     if command -v gsettings >/dev/null 2>&1; then
-        GSETTINGS_CMDS='
-            gsettings set org.gnome.desktop.interface color-scheme "prefer-dark" 2>/dev/null || true
-            gsettings set org.gnome.desktop.interface gtk-theme "adw-gtk3-dark" 2>/dev/null || true
-            gsettings set org.gnome.desktop.wm.preferences button-layout ":close" 2>/dev/null || true
-        '
-        if [ -n "$DBUS_SESSION_BUS_ADDRESS" ]; then eval "$GSETTINGS_CMDS"
-        else
-            USER_DBUS=$(systemctl --user show-environment 2>/dev/null | grep -E '^DBUS_SESSION_BUS_ADDRESS=')
-            if [ -n "$USER_DBUS" ]; then export "$USER_DBUS"; eval "$GSETTINGS_CMDS"
-            elif command -v dbus-run-session >/dev/null 2>&1; then dbus-run-session bash -c "$GSETTINGS_CMDS"
-            else eval "$GSETTINGS_CMDS"; fi
-        fi
+        gsettings set org.gnome.desktop.interface color-scheme "prefer-dark" 2>/dev/null || true
+        gsettings set org.gnome.desktop.interface gtk-theme "adw-gtk3-dark" 2>/dev/null || true
+        gsettings set org.gnome.desktop.wm.preferences button-layout ":close" 2>/dev/null || true
     fi
     
     mkdir -p "$HOME/Templates"
@@ -397,7 +477,7 @@ apply_user_configs() {
     if command -v kitty >/dev/null 2>&1; then ln -sfn /usr/bin/kitty "$HOME/.local/bin/xterm"; fi
     
     run_hide_desktop_file
-
+    
     if [[ -d "$WALLPAPER_SRC_DIR" ]]; then
         local wp_dest="$HOME/Pictures/Wallpapers"
         mkdir -p "$wp_dest"
@@ -414,10 +494,7 @@ apply_user_configs() {
     
     mkdir -p "$HOME/.config/niri/dms"
     touch "$HOME/.config/niri/dms/colors.kdl"
-    if [[ ! -f "$HOME/.config/niri/output.kdl" && -f "$HOME/.config/niri/output-example.kdl" ]]; then
-        cp "$HOME/.config/niri/output-example.kdl" "$HOME/.config/niri/output.kdl"
-    fi
-
+    
     local doc_src="$SCRIPT_DIR/README-Niri.txt"
     if [[ -f "$doc_src" ]]; then cp -n "$doc_src" "$HOME/必看-shoirn-Niri使用方法.txt" 2>/dev/null || true; fi
     
@@ -444,9 +521,17 @@ remove_dotfiles() {
     rm -f "$HOME/.config/niri/dms/colors.kdl" "$HOME/必看-shoirn-Niri使用方法.txt" 2>/dev/null
     rmdir "$HOME/.config/niri/dms" 2>/dev/null
     
-    if [[ -f "/etc/firefox/policies/policies.json" ]]; then
-        sudo rm -f "/etc/firefox/policies/policies.json"
-        sudo rmdir "/etc/firefox/policies" "/etc/firefox" 2>/dev/null
+    local profiles_ini="$HOME/.mozilla/firefox/profiles.ini"
+    if [[ -f "$profiles_ini" ]]; then
+        local profile_dir
+        profile_dir=$(grep -A5 '^\[Install' "$profiles_ini" | grep '^Default=' | cut -d= -f2 | head -1)
+        if [[ -z "$profile_dir" ]]; then
+            profile_dir=$(grep '^Path=' "$profiles_ini" | cut -d= -f2 | head -1)
+        fi
+        if [[ -n "$profile_dir" ]]; then
+            rm -f "$HOME/.mozilla/firefox/$profile_dir/policies/policies.json" 2>/dev/null
+            rmdir "$HOME/.mozilla/firefox/$profile_dir/policies" 2>/dev/null
+        fi
     fi
     
     ok "$(_t "Cleanup complete! Removed $removed_count files." "配置清理完成！精准移除了 $removed_count 个核心配置文件。")"
